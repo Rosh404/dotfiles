@@ -1,6 +1,34 @@
-local wezterm = require('wezterm')
-local os = require("os")
-local config = wezterm.config_builder()
+local wezterm    = require('wezterm')
+local os         = require('os')
+local config     = wezterm.config_builder()
+
+-- ================================================================
+-- Set this to 'wsl', 'linux', or 'windows'
+local TARGET_ENV = 'linux'
+-- ================================================================
+
+local is_windows = TARGET_ENV == 'windows'
+local is_linux   = TARGET_ENV == 'linux'
+local is_wsl     = TARGET_ENV == 'wsl'
+
+-- Resolve home directory for new panes/tabs
+local home_dir
+if is_wsl then
+  -- Derive WSL home from Windows username (assumes WSL username matches)
+  local username = wezterm.home_dir:match('[^\\]+$')
+  home_dir = '\\\\wsl.localhost\\Ubuntu\\home\\' .. username
+elseif is_linux then
+  home_dir = os.getenv('HOME')
+else
+  home_dir = wezterm.home_dir
+end
+
+-- Domain / default shell
+if is_wsl then
+  config.default_domain = 'WSL:Ubuntu'
+elseif is_windows then
+  config.default_prog = { 'powershell.exe', '-NoLogo' }
+end
 
 -- Configuration
 config.automatically_reload_config = true
@@ -11,10 +39,6 @@ config.font = wezterm.font 'FiraCode Nerd Font'
 config.window_background_opacity = 0.97
 
 config.hide_tab_bar_if_only_one_tab = true
-
--- The leader is similar to how tmux defines a set of keys to hit in order to
--- invoke tmux bindings. Binding to ctrl-a here to mimic tmux
-config.leader = { key = 'a', mods = 'CTRL', timeout_milliseconds = 2000 }
 
 config.mouse_bindings = {
   -- Open URLs with Ctrl+Click
@@ -52,52 +76,40 @@ config.colors = {
 }
 
 -- Wezterm <-> nvim pane navigation
--- You will need to install https://github.com/aca/wezterm.nvim
--- and ensure you export NVIM_LISTEN_ADDRESS per the README in that repo
+-- Linux: integrates with https://github.com/aca/wezterm.nvim (requires NVIM_LISTEN_ADDRESS)
+-- Windows/WSL: directly activates pane direction (nvim socket runs on host, not in WSL)
 local move_around = function(window, pane, direction_wez, direction_nvim)
-  local result = os.execute("env NVIM_LISTEN_ADDRESS=/tmp/nvim" ..
-    pane:pane_id() .. " wezterm.nvim.navigator " .. direction_nvim)
-  if result then
-    window:perform_action(wezterm.action({ SendString = "\x17" .. direction_nvim }), pane)
+  if is_linux then
+    local result = os.execute("env NVIM_LISTEN_ADDRESS=/tmp/nvim" ..
+      pane:pane_id() .. " wezterm.nvim.navigator " .. direction_nvim)
+    if result then
+      window:perform_action(wezterm.action({ SendString = "\x17" .. direction_nvim }), pane)
+    else
+      window:perform_action(wezterm.action({ ActivatePaneDirection = direction_wez }), pane)
+    end
   else
-    window:perform_action(wezterm.action({ ActivatePaneDirection = direction_wez }), pane)
+    window:perform_action(wezterm.action.ActivatePaneDirection(direction_wez), pane)
   end
 end
 
-wezterm.on("move-left", function(window, pane)
-  move_around(window, pane, "Left", "h")
-end)
+wezterm.on("move-left", function(w, p) move_around(w, p, "Left", "h") end)
+wezterm.on("move-right", function(w, p) move_around(w, p, "Right", "l") end)
+wezterm.on("move-up", function(w, p) move_around(w, p, "Up", "k") end)
+wezterm.on("move-down", function(w, p) move_around(w, p, "Down", "j") end)
 
-wezterm.on("move-right", function(window, pane)
-  move_around(window, pane, "Right", "l")
-end)
+wezterm.on("resize-left", function(w, p) w:perform_action(wezterm.action.AdjustPaneSize({ 'Left', 5 }), p) end)
+wezterm.on("resize-right", function(w, p) w:perform_action(wezterm.action.AdjustPaneSize({ 'Right', 5 }), p) end)
+wezterm.on("resize-up", function(w, p) w:perform_action(wezterm.action.AdjustPaneSize({ 'Up', 5 }), p) end)
+wezterm.on("resize-down", function(w, p) w:perform_action(wezterm.action.AdjustPaneSize({ 'Down', 5 }), p) end)
 
-wezterm.on("move-up", function(window, pane)
-  move_around(window, pane, "Up", "k")
-end)
-
-wezterm.on("move-down", function(window, pane)
-  move_around(window, pane, "Down", "j")
-end)
-
--- Setup muxing by default
-config.unix_domains = {
-  {
-    name = 'unix',
-  },
-}
+-- Unix domain muxing (Linux and WSL only)
+if is_linux or is_wsl then
+  config.unix_domains = { { name = 'unix' } }
+end
 
 config.leader = { key = 'Space', mods = 'CTRL', timeout_milliseconds = 2000 }
 
--- Custom key bindings
 config.keys = {
-  -- -- Disable Alt-Enter combination (already used in tmux to split pane)
-  -- {
-  --     key = 'Enter',
-  --     mods = 'ALT',
-  --     action = wezterm.action.DisableDefaultAssignment,
-  -- },
-
   -- Copy mode
   {
     key = '[',
@@ -107,213 +119,107 @@ config.keys = {
 
   -- ----------------------------------------------------------------
   -- TABS
-  --
-  -- Where possible, I'm using the same combinations as I would in tmux
   -- ----------------------------------------------------------------
 
-  -- Show tab navigator; similar to listing panes in tmux
-  {
-    key = 'w',
-    mods = 'LEADER',
-    action = wezterm.action.ShowTabNavigator,
-  },
-  -- Create a tab (alternative to Ctrl-Shift-Tab)
+  { key = 'w', mods = 'LEADER',       action = wezterm.action.ShowTabNavigator },
   {
     key = 'c',
     mods = 'LEADER',
-    action = wezterm.action.SpawnTab 'CurrentPaneDomain',
+    action = wezterm.action.SpawnCommandInNewTab {
+      cwd = home_dir,
+      domain = 'CurrentPaneDomain',
+    },
   },
-  -- Rename current tab; analagous to command in tmux
   {
     key = ',',
     mods = 'LEADER',
     action = wezterm.action.PromptInputLine {
       description = 'Enter new name for tab',
-      action = wezterm.action_callback(
-        function(window, pane, line)
-          if line then
-            window:active_tab():set_title(line)
-          end
-        end
-      ),
+      action = wezterm.action_callback(function(window, pane, line)
+        if line then window:active_tab():set_title(line) end
+      end),
     },
   },
-  -- Move to next/previous TAB
-  {
-    key = 'n',
-    mods = 'LEADER',
-    action = wezterm.action.ActivateTabRelative(1),
-  },
-  {
-    key = 'p',
-    mods = 'LEADER',
-    action = wezterm.action.ActivateTabRelative(-1),
-  },
-  -- Close tab
-  {
-    key = '&',
-    mods = 'LEADER|SHIFT',
-    action = wezterm.action.CloseCurrentTab { confirm = true },
-  },
+  { key = 'n', mods = 'LEADER',       action = wezterm.action.ActivateTabRelative(1) },
+  { key = 'p', mods = 'LEADER',       action = wezterm.action.ActivateTabRelative(-1) },
+  { key = '&', mods = 'LEADER|SHIFT', action = wezterm.action.CloseCurrentTab { confirm = true } },
 
   -- ----------------------------------------------------------------
   -- PANES
-  --
-  -- These are great and get me most of the way to replacing tmux
-  -- entirely, particularly as you can use "wezterm ssh" to ssh to another
-  -- server, and still retain Wezterm as your terminal there.
   -- ----------------------------------------------------------------
 
-  -- -- Vertical split
+  -- Vertical split
   {
-    -- |
     key = '|',
     mods = 'LEADER|SHIFT',
     action = wezterm.action.SplitPane {
       direction = 'Right',
       size = { Percent = 50 },
+      command = { cwd = home_dir },
     },
   },
   -- Horizontal split
   {
-    -- -
     key = '-',
     mods = 'LEADER',
     action = wezterm.action.SplitPane {
       direction = 'Down',
       size = { Percent = 50 },
+      command = { cwd = home_dir },
     },
   },
+
   -- CTRL + (h,j,k,l) to move between panes
-  {
-    key = 'h',
-    mods = 'CTRL',
-    action = wezterm.action({ EmitEvent = "move-left" }),
-  },
-  {
-    key = 'j',
-    mods = 'CTRL',
-    action = wezterm.action({ EmitEvent = "move-down" }),
-  },
-  {
-    key = 'k',
-    mods = 'CTRL',
-    action = wezterm.action({ EmitEvent = "move-up" }),
-  },
-  {
-    key = 'l',
-    mods = 'CTRL',
-    action = wezterm.action({ EmitEvent = "move-right" }),
-  },
+  { key = 'h', mods = 'CTRL',         action = wezterm.action({ EmitEvent = "move-left" }) },
+  { key = 'j', mods = 'CTRL',         action = wezterm.action({ EmitEvent = "move-down" }) },
+  { key = 'k', mods = 'CTRL',         action = wezterm.action({ EmitEvent = "move-up" }) },
+  { key = 'l', mods = 'CTRL',         action = wezterm.action({ EmitEvent = "move-right" }) },
+
   -- ALT + (h,j,k,l) to resize panes
-  {
-    key = 'h',
-    mods = 'ALT',
-    action = wezterm.action({ EmitEvent = "resize-left" }),
-  },
-  {
-    key = 'j',
-    mods = 'ALT',
-    action = wezterm.action({ EmitEvent = "resize-down" }),
-  },
-  {
-    key = 'k',
-    mods = 'ALT',
-    action = wezterm.action({ EmitEvent = "resize-up" }),
-  },
-  {
-    key = 'l',
-    mods = 'ALT',
-    action = wezterm.action({ EmitEvent = "resize-right" }),
-  },
-  -- Close/kill active pane
-  {
-    key = 'x',
-    mods = 'LEADER',
-    action = wezterm.action.CloseCurrentPane { confirm = true },
-  },
-  -- Swap active pane with another one
-  {
-    key = '{',
-    mods = 'LEADER|SHIFT',
-    action = wezterm.action.PaneSelect { mode = "SwapWithActiveKeepFocus" },
-  },
-  -- Zoom current pane (toggle)
-  {
-    key = 'm',
-    mods = 'LEADER',
-    action = wezterm.action.TogglePaneZoomState,
-  },
-  -- Move to next/previous pane
-  {
-    key = ';',
-    mods = 'LEADER',
-    action = wezterm.action.ActivatePaneDirection('Prev'),
-  },
-  {
-    key = 'o',
-    mods = 'LEADER',
-    action = wezterm.action.ActivatePaneDirection('Next'),
-  },
+  { key = 'h', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-left" }) },
+  { key = 'j', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-down" }) },
+  { key = 'k', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-up" }) },
+  { key = 'l', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-right" }) },
+
+  { key = 'x', mods = 'LEADER',       action = wezterm.action.CloseCurrentPane { confirm = true } },
+  { key = '{', mods = 'LEADER|SHIFT', action = wezterm.action.PaneSelect { mode = "SwapWithActiveKeepFocus" } },
+  { key = 'm', mods = 'LEADER',       action = wezterm.action.TogglePaneZoomState },
+  { key = ';', mods = 'LEADER',       action = wezterm.action.ActivatePaneDirection('Prev') },
+  { key = 'o', mods = 'LEADER',       action = wezterm.action.ActivatePaneDirection('Next') },
 
   -- ----------------------------------------------------------------
   -- Workspaces
-  --
-  -- These are roughly equivalent to tmux sessions.
   -- ----------------------------------------------------------------
 
-  -- Attach to muxer
-  {
-    key = 'a',
-    mods = 'LEADER',
-    action = wezterm.action.AttachDomain 'unix',
-  },
-
-  -- Detach from muxer
-  {
-    key = 'd',
-    mods = 'LEADER',
-    action = wezterm.action.DetachDomain { DomainName = 'unix' },
-  },
-
-  -- Show list of workspaces
-  {
-    key = 's',
-    mods = 'LEADER',
-    action = wezterm.action.ShowLauncherArgs { flags = 'WORKSPACES' },
-  },
-
-  -- Rename current session; analagous to command in tmux
+  { key = 's', mods = 'LEADER',       action = wezterm.action.ShowLauncherArgs { flags = 'WORKSPACES' } },
   {
     key = '$',
     mods = 'LEADER|SHIFT',
     action = wezterm.action.PromptInputLine {
       description = 'Enter new name for session',
-      action = wezterm.action_callback(
-        function(window, pane, line)
-          if line then
-            wezterm.mux.rename_workspace(
-              window:mux_window():get_workspace(),
-              line
-            )
-          end
+      action = wezterm.action_callback(function(window, pane, line)
+        if line then
+          wezterm.mux.rename_workspace(window:mux_window():get_workspace(), line)
         end
-      ),
+      end),
     },
   },
-
-  -- Move to next/previous Session
-  {
-    key = 'N', -- You can change this to any key you prefer
-    mods = 'LEADER|SHIFT',
-    action = wezterm.action.SwitchWorkspaceRelative(1),
-  },
-  {
-    key = 'P', -- You can change this to any key you prefer
-    mods = 'LEADER|SHIFT',
-    action = wezterm.action.SwitchWorkspaceRelative(-1),
-  },
-
+  { key = 'N', mods = 'LEADER|SHIFT', action = wezterm.action.SwitchWorkspaceRelative(1) },
+  { key = 'P', mods = 'LEADER|SHIFT', action = wezterm.action.SwitchWorkspaceRelative(-1) },
 }
+
+-- Attach/Detach muxer keys (Linux and WSL only)
+if is_linux or is_wsl then
+  table.insert(config.keys, {
+    key = 'a',
+    mods = 'LEADER',
+    action = wezterm.action.AttachDomain 'unix',
+  })
+  table.insert(config.keys, {
+    key = 'd',
+    mods = 'LEADER',
+    action = wezterm.action.DetachDomain { DomainName = 'unix' },
+  })
+end
 
 return config

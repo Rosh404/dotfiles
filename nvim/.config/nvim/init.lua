@@ -198,14 +198,24 @@ keymap.set("v", ">", ">gv")
 keymap.set("n", "<esc>", "<cmd>noh<cr><esc>") -- Clear search highlight
 
 -- Quickfixlist (Toggle)
-keymap.set("n", "<leader>ql", function()
+keymap.set("n", "<leader>qt", function()
   local qf_win = vim.fn.getqflist({ winid = 0 }).winid
   if qf_win ~= 0 then
     vim.cmd("cclose")
   else
     vim.cmd("copen")
   end
-end, { desc = "[Q]uickfix List" })
+end, { desc = "[Q]uickfix List [T]oggle" })
+
+
+vim.keymap.set('n', '<leader>qd', function()
+  vim.diagnostic.setqflist({ open = true, })
+end, { desc = "[Q]uickfix List [D]iagnostics" })
+
+vim.keymap.set('n', '<leader>qc', function()
+  vim.fn.setqflist({}, 'r')
+  print("Quickfix list cleared")
+end, { desc = "Clear quickfix list" })
 
 
 keymap.set('n', ']d', function()
@@ -215,6 +225,9 @@ end, { desc = 'Next diagnostic' })
 keymap.set('n', '[d', function()
   vim.diagnostic.jump({ count = -1, float = true })
 end, { desc = 'Previous diagnostic' })
+
+vim.keymap.set('n', ']q', ':cnext<CR>', { desc = "Next quickfix item" })
+vim.keymap.set('n', '[q', ':cprev<CR>', { desc = "Previous quickfix item" })
 
 -- 5. Colorscheme -----------------------------------------------------------------
 vim.g.nord_contrast = true
@@ -249,6 +262,14 @@ local modes = {
   ["t"] = "TERMINAL",
 }
 
+-- Define specific colors for your mode
+vim.api.nvim_set_hl(0, "StatusModeNormal", { fg = "#2E3440", bg = "#88C0D0", bold = true })
+vim.api.nvim_set_hl(0, "StatusModeInsert", { fg = "#2E3440", bg = "#A3BE8C", bold = true })
+vim.api.nvim_set_hl(0, "StatusModeVisual", { fg = "#2E3440", bg = "#EBCB8B", bold = true })
+vim.api.nvim_set_hl(0, "StatusModeReplace", { fg = "#2E3440", bg = "#BF616A", bold = true })
+vim.api.nvim_set_hl(0, "StatusModeCommand", { fg = "#2E3440", bg = "#D08770", bold = true })
+vim.api.nvim_set_hl(0, "StatusModeTerminal", { fg = "#2E3440", bg = "#B48EAD", bold = true })
+
 local function mode()
   local current_mode = vim.api.nvim_get_mode().mode
   return string.format(" %s ", modes[current_mode]):upper()
@@ -256,20 +277,22 @@ end
 
 local function update_mode_colors()
   local current_mode = vim.api.nvim_get_mode().mode
-  local mode_color = "%#StatusLineAccent#"
+
+  local mode_color = "%#StatusModeNormal#"
   if current_mode == "n" then
-    mode_color = "%#StatuslineAccent#"
+    mode_color = "%#StatusModeNormal#"
   elseif current_mode == "i" or current_mode == "ic" then
-    mode_color = "%#StatuslineInsertAccent#"
+    mode_color = "%#StatusModeInsert#"
   elseif current_mode == "v" or current_mode == "V" or current_mode == "" then
-    mode_color = "%#StatuslineVisualAccent#"
+    mode_color = "%#StatusModeVisual#"
   elseif current_mode == "R" then
-    mode_color = "%#StatuslineReplaceAccent#"
+    mode_color = "%#StatusModeReplace#"
   elseif current_mode == "c" then
-    mode_color = "%#StatuslineCmdLineAccent#"
+    mode_color = "%#StatusModeCommand#"
   elseif current_mode == "t" then
-    mode_color = "%#StatuslineTerminalAccent#"
+    mode_color = "%#StatusModeTerminal#"
   end
+
   return mode_color
 end
 
@@ -432,7 +455,7 @@ local buffer_setup = function()
   set_mapping('<space>k', '<cmd>lua vim.lsp.buf.signature_help()<cr>')
 
   -- References
-  set_mapping('grr', '<cmd>lua vim.lsp.buf.references()<cr>')
+  set_mapping('gr', '<cmd>lua vim.lsp.buf.references()<cr>')
   set_mapping('gi', '<cmd>lua vim.lsp.buf.implementation()<cr>')
 
   -- Symbol Search
@@ -496,6 +519,38 @@ vim.api.nvim_create_autocmd('BufWritePre', {
 --     end
 --   end
 -- })
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "qf",
+  callback = function()
+    vim.cmd([[
+      " Extend syntax to include additional keywords.
+      syntax match qfLineNr   "[^|]*"   contained contains=qfError,qfWarning,qfNote,qfInfo
+      syntax match qfError    "error"   contained
+      syntax match qfWarning  "warning" contained
+      syntax match qfNote     "note"    contained
+      syntax match qfInfo     "info"    contained
+
+      " Link new syntax to DiagnosticSign highlight groups.
+      highlight! default link qfError     DiagnosticSignError
+      highlight! default link qfWarning   DiagnosticSignWarn
+      highlight! default link qfNote      DiagnosticSignHint
+      highlight! default link qfInfo      DiagnosticSignInfo
+    ]])
+  end,
+})
+
+vim.api.nvim_create_autocmd("FileType", {
+  pattern = "qf",
+  callback = function()
+    -- Enable line wrapping
+    vim.opt_local.wrap = true
+
+    -- Optional: Keep the left side fixed if you prefer
+    vim.opt_local.breakindent = true
+    vim.api.nvim_set_hl(0, "qfLineNr", { fg = '#D8DEE9', bg = "none" })
+  end,
+})
 
 -- 8. LSP - Lua -----------------------------------------------------------------
 vim.lsp.config('lua_ls', {
