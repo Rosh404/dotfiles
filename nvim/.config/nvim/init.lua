@@ -8,6 +8,8 @@
 -- 7. LSP General Config
 -- 8. LSP - Lua
 -- 9. LSP - Go
+-- 10. LSP - Java
+
 
 -- 1. Plugins -----------------------------------------------------------------
 vim.pack.add({
@@ -573,6 +575,7 @@ vim.lsp.config('lua_ls', {
 vim.lsp.enable('lua_ls')
 
 -- 9. LSP - Go -----------------------------------------------------------------
+
 vim.lsp.config('gopls', {
   on_attach = buffer_setup,
   settings = {
@@ -599,3 +602,20 @@ vim.lsp.config('gopls', {
 })
 
 vim.lsp.enable('gopls')
+
+-- 10. LSP - Java -----------------------------------------------------------------
+-- require('plugins.jdtls')
+
+-- Add this to your init.lua or lsp configuration file
+-- vim.lsp.config('jdtls', {
+--   cmd = {
+--     'jdtls',                                                                                                       -- Make sure jdtls is in your PATH
+--     '-data', '~/.config/jdtls/workspace',
+--     '-configuration', vim.fn.expand('/usr/local/java/jdtls/jdt-language-server-1.60.0-202606262232/config_linux'), -- You may need to locate your config folder
+--   },
+--   root_dir = vim.fs.root(0, { '.git', 'mvnw', 'gradlew', 'pom.xml', 'build.gradle' }),
+--   capabilities = vim.lsp.protocol.make_client_capabilities(),
+--   on_attach = buffer_setup,
+-- })
+--
+-- vim.lsp.enable('jdtls')

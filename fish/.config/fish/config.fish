@@ -8,6 +8,7 @@ end
 
 set -gx EDITOR vim
 
+set -x JDTLS_HOME /usr/local/java/jdtls/jdt-language-server-1.60.0-202606262232
 set -x LUA_HOME /usr/local/lua
 set -x MAVEN_HOME /usr/local/maven/apache-maven-3.9.16
 set -x JAVA_HOME /usr/local/java/jdk-26.0.1
@@ -21,7 +22,8 @@ set -x PATH $PATH \
     $GOPATH/bin \
     $JAVA_HOME/bin \
     $MAVEN_HOME/bin \
-    $LUA_HOME/bin
+    $LUA_HOME/bin \
+    $JDTLS_HOME/bin
 
 #set -x PATH $PATH $HOME/.local/bin
 
