@@ -1,13 +1,14 @@
 MenuBar=Disabled
 
 [Desktop Entry]
-DefaultProfile=Custom.profile
+DefaultProfile=Nord.profile
 
 [General]
 ConfigVersion=1
 
 [MainWindow]
 MenuBar=Disabled
+ToolBarsMovable=Enabled
 
 [MainWindow][Toolbar mainToolBar]
 ToolButtonStyle=IconOnly

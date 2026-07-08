@@ -57,4 +57,15 @@ function fish_user_key_bindings
     fish_vi_key_bindings --no-erase insert
 end
 
+fzf --fish | source
+
+function fgit
+    git ls-files -m -o --exclude-standard | fzf \
+        --height 100% \
+        --layout=reverse \
+        --border \
+        --preview 'git diff --color=always -- {-1} | delta' \
+        --bind 'enter:execute(git diff --color=always {-1} | delta | less -R)'
+end
+
 source $HOME/.config/op/plugins.sh

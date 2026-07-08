@@ -604,9 +604,6 @@ vim.lsp.config('gopls', {
 vim.lsp.enable('gopls')
 
 -- 10. LSP - Java -----------------------------------------------------------------
--- require('plugins.jdtls')
-
--- Add this to your init.lua or lsp configuration file
 -- vim.lsp.config('jdtls', {
 --   cmd = {
 --     'jdtls',                                                                                                       -- Make sure jdtls is in your PATH

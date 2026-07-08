@@ -2,4 +2,4 @@
 # VERSION: 3.0
 SETUVAR __fish_initialized:4300
 SETUVAR fish_greeting:\x1d
-SETUVAR fish_user_paths:/home/walter/usr/local/go/bin
+SETUVAR fish_user_paths:/home/walter/usr/local/go/bin\x1e/home/walter/\x2efzf/bin

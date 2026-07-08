@@ -2,6 +2,8 @@ local wezterm    = require('wezterm')
 local os         = require('os')
 local config     = wezterm.config_builder()
 
+local projects   = require('projects')
+
 -- ================================================================
 -- Set this to 'wsl', 'linux', or 'windows'
 local TARGET_ENV = 'linux'
@@ -62,8 +64,8 @@ config.window_padding = {
 }
 
 -- Tab bar
-config.use_fancy_tab_bar = true
 config.tab_bar_at_bottom = true
+config.use_fancy_tab_bar = true
 config.switch_to_last_active_tab_when_closing_tab = true
 config.tab_max_width = 32
 config.colors = {
@@ -140,8 +142,8 @@ config.keys = {
       end),
     },
   },
-  { key = 'n', mods = 'LEADER',       action = wezterm.action.ActivateTabRelative(1) },
-  { key = 'p', mods = 'LEADER',       action = wezterm.action.ActivateTabRelative(-1) },
+  -- { key = 'n', mods = 'LEADER',       action = wezterm.action.ActivateTabRelative(1) },
+  -- { key = 'p', mods = 'LEADER',       action = wezterm.action.ActivateTabRelative(-1) },
   { key = '&', mods = 'LEADER|SHIFT', action = wezterm.action.CloseCurrentTab { confirm = true } },
 
   -- ----------------------------------------------------------------
@@ -191,7 +193,7 @@ config.keys = {
   -- Workspaces
   -- ----------------------------------------------------------------
 
-  { key = 's', mods = 'LEADER',       action = wezterm.action.ShowLauncherArgs { flags = 'WORKSPACES' } },
+  { key = 's', mods = 'LEADER',       action = wezterm.action.ShowLauncherArgs { flags = 'FUZZY|WORKSPACES' } },
   {
     key = '$',
     mods = 'LEADER|SHIFT',
@@ -206,6 +208,12 @@ config.keys = {
   },
   { key = 'N', mods = 'LEADER|SHIFT', action = wezterm.action.SwitchWorkspaceRelative(1) },
   { key = 'P', mods = 'LEADER|SHIFT', action = wezterm.action.SwitchWorkspaceRelative(-1) },
+  {
+    key = 'p',
+    mods = 'LEADER',
+    -- Present in to our project picker
+    action = projects.choose_project(),
+  },
 }
 
 -- Attach/Detach muxer keys (Linux and WSL only)
@@ -221,5 +229,23 @@ if is_linux or is_wsl then
     action = wezterm.action.DetachDomain { DomainName = 'unix' },
   })
 end
+
+-- Quickly navigate tabs with index
+for i = 1, 9 do
+  table.insert(config.keys, {
+    key = tostring(i),
+    mods = "LEADER",
+    action = wezterm.action.ActivateTab(i - 1)
+  })
+end
+
+-- Status bar
+-- Display Workspace name on the left and date/time on the right
+wezterm.on('update-status', function(window, pane)
+  local workspace = window:active_workspace()
+  local date = wezterm.strftime('%Y/%m/%d %H:%M:%S')
+  window:set_left_status(' ' .. workspace .. ' ')
+  window:set_right_status(' ' .. date .. ' ')
+end)
 
 return config
