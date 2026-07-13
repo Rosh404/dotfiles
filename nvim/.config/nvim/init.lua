@@ -38,6 +38,8 @@ vim.opt.hlsearch = true   -- Highlight all matches in search
 vim.opt.ignorecase = true -- Ignore case in search
 vim.opt.smartcase = true  -- Match case if explicitly stated
 vim.opt.path:append('**') -- Search down info subfolders
+vim.opt.grepprg = "rg --vimgrep --smart-case --hidden --glob '!.git/*'"
+vim.opt.grepformat = "%f:%l:%c:%m"
 
 -- Splits
 vim.opt.splitbelow = true -- Force horizontal splits below current window
@@ -198,6 +200,20 @@ keymap.set("v", ">", ">gv")
 
 -- Highlight
 keymap.set("n", "<esc>", "<cmd>noh<cr><esc>") -- Clear search highlight
+
+-- Fuzzy Find
+keymap.set("n", "<leader>ff", "<cmd>FZF<cr>", { desc = "Find files" })
+vim.keymap.set("n", "<leader>fg", function()
+  -- Open the prompt and wait for input
+  vim.ui.input({ prompt = 'Grep: ' }, function(input)
+    if input and input ~= "" then
+      -- Execute the grep command with the provided input
+      vim.cmd("silent grep! " .. input)
+      -- Open the quickfix window to show results
+      vim.cmd("copen")
+    end
+  end)
+end, { desc = "Grep Search" })
 
 -- Quickfixlist (Toggle)
 keymap.set("n", "<leader>qt", function()
@@ -471,7 +487,7 @@ vim.diagnostic.config({
   update_in_insert = false,
   underline = true,
   severity_sort = true,
-  float = { border = 'rounded', source = 'if_many' },
+  float = { border = 'double', source = 'if_many' },
   signs = {
     text = {
       [vim.diagnostic.severity.ERROR] = "",
@@ -575,7 +591,6 @@ vim.lsp.config('lua_ls', {
 vim.lsp.enable('lua_ls')
 
 -- 9. LSP - Go -----------------------------------------------------------------
-
 vim.lsp.config('gopls', {
   on_attach = buffer_setup,
   settings = {

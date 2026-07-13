@@ -162,13 +162,6 @@ nnoremap <C-l> <C-w>l
 " clear the search buffer when hitting return
 nnoremap <leader><cr> :nohlsearch<cr>
 
-" You can split the window in Vim by typing :split or :vsplit.
-" Navigate the split view easier by pressing CTRL+j, CTRL+k, CTRL+h, or CTRL+l.
-nnoremap <c-j> <c-w>j
-nnoremap <c-k> <c-w>k
-nnoremap <c-h> <c-w>h
-nnoremap <c-l> <c-w>l
-
 " Resize split windows using arrow keys by pressing:
 " CTRL+UP, CTRL+DOWN, CTRL+LEFT, or CTRL+RIGHT.
 noremap <c-up> <c-w>+
@@ -182,6 +175,7 @@ nnoremap <F3> :NERDTreeToggle<cr>
 
 " }}}
 
+nnoremap <leader>fa :FZF<cr>
 
 " VIMSCRIPT -------------------------------------------------------------- {{{
 

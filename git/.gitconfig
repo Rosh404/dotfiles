@@ -1,6 +1,7 @@
 [alias]
     tree = log --oneline --decorate --graph --all
     tree-a = log --graph --pretty=format:'%Cred%h%Creset -%C(auto)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --all
+    olg= log --oneline --graph
 	  ch = !git checkout $(git branch --all | fzf | tr -d \"[[:space:]]\")
 
 [core]
@@ -15,4 +16,6 @@
     line-numbers = true
 
 [merge]
+    tool = nvimdiff
     conflictStyle = zdiff3
+    keepBackup = false

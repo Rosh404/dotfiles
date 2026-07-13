@@ -1,5 +1,5 @@
 local wezterm = require 'wezterm'
-local module = {}
+local M = {}
 
 -- local project_dir = wezterm.home_dir .. "/projects/go"
 
@@ -25,7 +25,7 @@ local function get_all_projects()
   return projects
 end
 
-function module.choose_project()
+function M.choose_project()
   local choices = {}
 
   for _, value in ipairs(get_all_projects()) do
@@ -49,10 +49,27 @@ function module.choose_project()
         name = label:match("([^/]+)$"),
         -- Here's the meat. We'll spawn a new terminal with the current working
         -- directory set to the directory that was picked.
-        spawn = { cwd = label },
+        spawn = {
+          cwd = label,
+          -- args = { "fish", "-c", "nvim ." }
+        },
+
       }, child_pane)
+
+      -- 2. Once in the new workspace, spawn 2 more tabs
+      -- (The first one was already created by the 'spawn' above)
+      -- for i = 1, 2 do
+      --   child_window:perform_action(wezterm.action.SpawnCommandInNewTab {
+      --     cwd = label,
+      --     args = { "top" }
+      --   }, child_pane)
+      -- end
+
+      -- 3. Move back to the first tab (Index 0)
+      -- Note: We use 0 for the first tab in the current window
+      -- child_window:perform_action(wezterm.action.ActivateTab(0), child_pane)
     end),
   }
 end
 
-return module
+return M

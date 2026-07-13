@@ -39,7 +39,6 @@ config.color_scheme = 'nord'
 config.line_height = 1.0
 config.font = wezterm.font 'FiraCode Nerd Font'
 config.window_background_opacity = 0.97
-
 config.hide_tab_bar_if_only_one_tab = true
 
 config.mouse_bindings = {
@@ -172,28 +171,28 @@ config.keys = {
   },
 
   -- CTRL + (h,j,k,l) to move between panes
-  { key = 'h', mods = 'CTRL',         action = wezterm.action({ EmitEvent = "move-left" }) },
-  { key = 'j', mods = 'CTRL',         action = wezterm.action({ EmitEvent = "move-down" }) },
-  { key = 'k', mods = 'CTRL',         action = wezterm.action({ EmitEvent = "move-up" }) },
-  { key = 'l', mods = 'CTRL',         action = wezterm.action({ EmitEvent = "move-right" }) },
+  { key = 'h',          mods = 'ALT',          action = wezterm.action({ EmitEvent = "move-left" }) },
+  { key = 'j',          mods = 'ALT',          action = wezterm.action({ EmitEvent = "move-down" }) },
+  { key = 'k',          mods = 'ALT',          action = wezterm.action({ EmitEvent = "move-up" }) },
+  { key = 'l',          mods = 'ALT',          action = wezterm.action({ EmitEvent = "move-right" }) },
 
-  -- ALT + (h,j,k,l) to resize panes
-  { key = 'h', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-left" }) },
-  { key = 'j', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-down" }) },
-  { key = 'k', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-up" }) },
-  { key = 'l', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-right" }) },
+  -- ALT + arrow keys to resize panes
+  { key = 'LeftArrow',  mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-left" }) },
+  { key = 'DownArrow',  mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-down" }) },
+  { key = 'UpArrow',    mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-up" }) },
+  { key = 'RightArrow', mods = 'ALT',          action = wezterm.action({ EmitEvent = "resize-right" }) },
 
-  { key = 'x', mods = 'LEADER',       action = wezterm.action.CloseCurrentPane { confirm = true } },
-  { key = '{', mods = 'LEADER|SHIFT', action = wezterm.action.PaneSelect { mode = "SwapWithActiveKeepFocus" } },
-  { key = 'm', mods = 'LEADER',       action = wezterm.action.TogglePaneZoomState },
-  { key = ';', mods = 'LEADER',       action = wezterm.action.ActivatePaneDirection('Prev') },
-  { key = 'o', mods = 'LEADER',       action = wezterm.action.ActivatePaneDirection('Next') },
+  { key = 'x',          mods = 'LEADER',       action = wezterm.action.CloseCurrentPane { confirm = true } },
+  { key = '{',          mods = 'LEADER|SHIFT', action = wezterm.action.PaneSelect { mode = "SwapWithActiveKeepFocus" } },
+  { key = 'm',          mods = 'LEADER',       action = wezterm.action.TogglePaneZoomState },
+  { key = ';',          mods = 'LEADER',       action = wezterm.action.ActivatePaneDirection('Prev') },
+  { key = 'o',          mods = 'LEADER',       action = wezterm.action.ActivatePaneDirection('Next') },
 
   -- ----------------------------------------------------------------
   -- Workspaces
   -- ----------------------------------------------------------------
 
-  { key = 's', mods = 'LEADER',       action = wezterm.action.ShowLauncherArgs { flags = 'FUZZY|WORKSPACES' } },
+  { key = 's',          mods = 'LEADER',       action = wezterm.action.ShowLauncherArgs { flags = 'FUZZY|WORKSPACES' } },
   {
     key = '$',
     mods = 'LEADER|SHIFT',
