@@ -128,29 +128,6 @@ local function delete_qf_items()
   vim.fn.cursor(start_idx, 1)
 end
 
--- quicklist commands
-vim.api.nvim_create_autocmd('FileType', {
-  group = custom_group,
-  pattern = 'qf',
-  callback = function()
-    -- Do not show quickfix in buffer lists.
-    vim.bo.buflisted = false
-
-    -- Escape closes quickfix window.
-    vim.keymap.set(
-      'n',
-      '<ESC>',
-      '<CMD>cclose<CR>',
-      { buffer = true, remap = false, silent = true }
-    )
-
-    -- `dd` deletes an item from the list.
-    vim.keymap.set('n', 'dd', delete_qf_items, { buffer = true })
-    vim.keymap.set('x', 'd', delete_qf_items, { buffer = true })
-  end,
-  desc = 'Quickfix tweaks',
-})
-
 -- 4. Keymaps -----------------------------------------------------------------
 local keymap = vim.keymap
 local opts = { noremap = true, silent = true }
@@ -215,7 +192,7 @@ vim.keymap.set("n", "<leader>fg", function()
   end)
 end, { desc = "Grep Search" })
 
--- Quickfixlist (Toggle)
+-- Quickfixlist
 keymap.set("n", "<leader>qt", function()
   local qf_win = vim.fn.getqflist({ winid = 0 }).winid
   if qf_win ~= 0 then
@@ -234,6 +211,28 @@ vim.keymap.set('n', '<leader>qc', function()
   vim.fn.setqflist({}, 'r')
   print("Quickfix list cleared")
 end, { desc = "Clear quickfix list" })
+
+vim.api.nvim_create_autocmd('FileType', {
+  group = custom_group,
+  pattern = 'qf',
+  callback = function()
+    -- Do not show quickfix in buffer lists.
+    vim.bo.buflisted = false
+
+    -- Escape closes quickfix window.
+    vim.keymap.set(
+      'n',
+      '<ESC>',
+      '<CMD>cclose<CR>',
+      { buffer = true, remap = false, silent = true }
+    )
+
+    -- `dd` deletes an item from the list.
+    vim.keymap.set('n', 'dd', delete_qf_items, { buffer = true })
+    vim.keymap.set('x', 'd', delete_qf_items, { buffer = true })
+  end,
+  desc = 'Quickfix tweaks',
+})
 
 
 keymap.set('n', ']d', function()
@@ -378,17 +377,20 @@ local function lsp_diagnostics()
   return errors .. warnings .. info .. hints .. "%#StatusLine#"
 end
 
+
+vim.api.nvim_set_hl(0, 'FileType', { fg = '#2E3440', bg = '#83a598' })
+
 local function file_type()
-  return string.format(" %s ", vim.bo.filetype):upper()
+  return string.format("%%#FileType# %s ", vim.bo.filetype):upper()
 end
 
-local git_info = function()
-  local branch = vim.fn.system("git branch --show-current 2> /dev/null | tr -d '\n'")
-  if branch ~= "" then
-    return " " .. branch --  is the standard Git branch icon
-  end
-  return ""
-end
+-- local git_info = function()
+--   local branch = vim.fn.system("git branch --show-current 2> /dev/null | tr -d '\n'")
+--   if branch ~= "" then
+--     return " " .. branch --  is the standard Git branch icon
+--   end
+--   return ""
+-- end
 
 local function percentage()
   local current_line = vim.fn.line(".")
@@ -409,7 +411,7 @@ Statusline.active = function()
     update_mode_colors(),
     mode(),
     "%#Normal# ",
-    git_info(),
+    -- git_info(),
     file_path(),
     file_name(),
     "%#Normal#",
@@ -510,7 +512,7 @@ vim.api.nvim_create_autocmd('BufWritePre', {
     for _, client in ipairs(clients) do
       if client.supports_method(client, 'textDocument/formatting') then
         vim.lsp.buf.format({
-          async = false,
+          async = true,
           id = client.id,
         })
       end
@@ -538,6 +540,12 @@ vim.api.nvim_create_autocmd('BufWritePre', {
 --   end
 -- })
 
+-- Define links for Quickfix/Location list highlights
+vim.api.nvim_set_hl(0, "qfError", { link = "DiagnosticSignError", default = true })
+vim.api.nvim_set_hl(0, "qfWarning", { link = "DiagnosticSignWarn", default = true })
+vim.api.nvim_set_hl(0, "qfNote", { link = "DiagnosticSignHint", default = true })
+vim.api.nvim_set_hl(0, "qfInfo", { link = "DiagnosticSignInfo", default = true })
+
 vim.api.nvim_create_autocmd("FileType", {
   pattern = "qf",
   callback = function()
@@ -548,12 +556,6 @@ vim.api.nvim_create_autocmd("FileType", {
       syntax match qfWarning  "warning" contained
       syntax match qfNote     "note"    contained
       syntax match qfInfo     "info"    contained
-
-      " Link new syntax to DiagnosticSign highlight groups.
-      highlight! default link qfError     DiagnosticSignError
-      highlight! default link qfWarning   DiagnosticSignWarn
-      highlight! default link qfNote      DiagnosticSignHint
-      highlight! default link qfInfo      DiagnosticSignInfo
     ]])
   end,
 })
