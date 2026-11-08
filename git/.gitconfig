@@ -19,3 +19,6 @@
     tool = nvimdiff
     conflictStyle = zdiff3
     keepBackup = false
+[user]
+	name = rosh404
+	email = roshandx88@gmail.com

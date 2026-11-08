@@ -136,14 +136,16 @@ local opts = { noremap = true, silent = true }
 vim.g.mapleader = " "
 vim.g.maplocalleader = " "
 
+keymap.set("i", "jk", "<Esc>", { silent = true })
+
 keymap.set("n", ";p", '"0P', opts)       -- Paste last yanked
 
 keymap.set("v", "J", ":m '>+1<CR>gv=gv") -- Shift visual selected line down
 keymap.set("v", "K", ":m '<-2<CR>gv=gv") -- Shift visual selected line up
 
 keymap.set("n", "J", "mzJ`z")
-keymap.set("n", "<C-d>", "<C-d>zz") -- Middle view when going down
-keymap.set("n", "<C-u>", "<C-u>zz") -- Middle view when going up
+keymap.set("n", "<C-d>", "<C-d>zz", { desc = "Scroll down and center cursor" })
+keymap.set("n", "<C-u>", "<C-u>zz", { desc = "Scroll up and center cursor" })
 keymap.set("n", "n", "nzzzv")
 keymap.set("n", "N", "Nzzzv")
 
@@ -235,16 +237,16 @@ vim.api.nvim_create_autocmd('FileType', {
 })
 
 
-keymap.set('n', ']d', function()
+keymap.set('n', '<leader>dn', function()
   vim.diagnostic.jump({ count = 1, float = true })
 end, { desc = 'Next diagnostic' })
 
-keymap.set('n', '[d', function()
+keymap.set('n', '<leader>dp', function()
   vim.diagnostic.jump({ count = -1, float = true })
 end, { desc = 'Previous diagnostic' })
 
-vim.keymap.set('n', ']q', ':cnext<CR>', { desc = "Next quickfix item" })
-vim.keymap.set('n', '[q', ':cprev<CR>', { desc = "Previous quickfix item" })
+vim.keymap.set('n', '<leader>qn', ':cnext<CR>', { desc = "Next quickfix item" })
+vim.keymap.set('n', '<leader>qp', ':cprev<CR>', { desc = "Previous quickfix item" })
 
 -- 5. Colorscheme -----------------------------------------------------------------
 vim.g.nord_contrast = true
